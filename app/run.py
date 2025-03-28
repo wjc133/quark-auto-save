@@ -12,6 +12,7 @@ from flask import (
     send_from_directory,
     stream_with_context,
 )
+from flask_cors import CORS
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.triggers.cron import CronTrigger
 from datetime import timedelta
@@ -59,6 +60,8 @@ app.json.ensure_ascii = False
 app.json.sort_keys = False
 app.jinja_env.variable_start_string = "[["
 app.jinja_env.variable_end_string = "]]"
+
+CORS(app, resources=r'/add_task')
 
 scheduler = BackgroundScheduler()
 logging.basicConfig(
@@ -179,6 +182,21 @@ def update():
     else:
         logging.info(f">>> 配置更新失败")
         return "配置更新失败"
+
+@app.route("/add_task", methods=["POST"])
+def add_task():
+    data = request.json
+    # todo 校验字段是否缺失
+    config = read_json()
+    config["tasklist"].append(data)
+    write_json(config)
+    # 重新加载任务
+    if reload_tasks():
+        logging.info(f">>> 配置更新成功")
+        return "0"
+    else:
+        logging.info(f">>> 配置更新失败")
+        return "101"
 
 
 # 处理运行脚本请求

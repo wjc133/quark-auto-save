@@ -11,7 +11,7 @@ on:
       - "v*"
 
 env:
-  IMAGE_NAME: ${{ github.repository }}
+  IMAGE_NAME: cmsdwjc133/quark-auto-save
 
 jobs:
   build-and-push:

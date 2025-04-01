@@ -164,14 +164,6 @@ docker run --rm -v /var/run/docker.sock:/var/run/docker.sock containrrr/watchtow
 
 请参考 Wiki ：[使用技巧集锦](https://github.com/Cp0204/quark-auto-save/wiki/使用技巧集锦)
 
-## 打赏
-
-如果这个项目让你受益，你可以打赏我1块钱，让我知道开源有价值。谢谢！
-
-![WeChatPay](https://cdn.jsdelivr.net/gh/Cp0204/Cp0204@main/img/wechat_pay_qrcode.png)
-
 ## 声明
 
-本程序为个人兴趣开发，开源仅供学习与交流使用。
-
-程序没有任何破解行为，只是对于夸克已有的API进行封装，所有数据来自于夸克官方API，本人不对网盘内容负责、不对夸克官方API未来可能的改动导致的后果负责。
+这个程序基于 Cp0204/quark-auto-save 魔改而成，主要是增加了给一键追剧的油猴脚本使用的接口，还有脚本的 LLM 推理（需要配合dify ai）。

@@ -205,7 +205,7 @@ def run_script_now():
     if not is_login():
         return "未登录"
     task_index = request.args.get("task_index", "")
-    command = [PYTHON_PATH, "-u", SCRIPT_PATH, CONFIG_PATH, task_index]
+    command = [PYTHON_PATH, "-u", SCRIPT_PATH, CONFIG_PATH, task_index, "--manual_run"]
     logging.info(
         f">>> 手动运行任务{int(task_index)+1 if task_index.isdigit() else 'all'}"
     )

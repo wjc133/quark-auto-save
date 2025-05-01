@@ -1,7 +1,8 @@
 // ==UserScript==
-// @name         Quark Disk Button Adder
-// @namespace    http://tampermonkey.net/
-// @version      0.1
+// @name         Quark一键追剧
+// @namespace    http://ellalab.top/
+// @icon         https://www.google.com/s2/favicons?domain=quark.cn
+// @version      0.0.2
 // @description  在夸克网盘页面添加一个按钮，点击后打印当前页面URL到控制台
 // @author       wjc133
 // @require      https://code.jquery.com/jquery-3.7.1.min.js
@@ -9,12 +10,17 @@
 // @match        https://pan.quark.cn/*
 // @grant        GM_addStyle
 // @grant        GM_getResourceText
+// @grant        GM_xmlhttpRequest
+// @note        0.0.1 基础功能研发完成
+// @note        0.0.2 添加了正则表达式自动推理
 // ==/UserScript==
 
 (function () {
     'use strict';
 
-    const baseUrl = "http://localhost:5005"
+    const baseUrl = "http://100.124.217.105:5005"
+    const llmUrl = "http://100.124.217.105"
+    const llmToken = "app-qYR4B5zvrN1YQ3BlpW0TKEm6"
 
     // 用于判断 DOM 是否 Ready 的选择器
     const initSelector = '#ice-container .share-info-wrap'
@@ -48,7 +54,16 @@
                     <option value="7">星期日</option>
                 </select>
             </div>
-        </div> 
+        </div>
+        <div class="layui-form-item">
+            <label class="layui-form-label">文件重命名</label>
+            <div class="layui-input-inline">
+                <input type="text" name="regexMatch" lay-verify="required" placeholder="匹配规则" class="layui-input">
+            </div>
+            <div class="layui-input-inline">
+                <input type="text" name="regexRename" placeholder="重命名规则" class="layui-input">
+            </div>
+        </div>
         <div class="layui-form-item">
             <div class="layui-input-block">
             <button type="submit" class="layui-btn" lay-submit lay-filter="demo1">立即提交</button>
@@ -80,71 +95,107 @@
             'gap': '10px',
         })
         $('#addToAutoSave').on('click', function () {
-            // alert(window.location.href)
-            // 在此处输入 layer 的任意代码
-            layer.open({
-                type: 1, // page 层类型
-                area: ['800px', '400px'],
-                title: '追更资源',
-                shade: 0.6, // 遮罩透明度
-                shadeClose: true, // 点击遮罩区域，关闭弹层
-                maxmin: true, // 允许全屏最小化
-                anim: 0, // 0-6 的动画形式，-1 不开启
-                content: model
-            })
-            var thisPageUrl = window.location.href
-            layui.use(['form'], function () {
-                var form = layui.form;
-                form.render(); // 渲染全部表单
-                var layer = layui.layer;
-                form.val('auto_save_form', {
-                    "resourceName": getResourceName(thisPageUrl), // "name": "value"
-                    "shareLink": thisPageUrl,
-                });
-                // 提交事件
-                form.on('submit(demo1)', function (data) {
-                    var field = data.field; // 获取表单字段值
-                    const req = {
-                        "taskname": field.resourceName,
-                        "shareurl": field.shareLink,
-                        "savepath": `/国产电视剧/${field.resourceName}`,
-                        "pattern": "$TV",
-                        "replace": "",
-                        "enddate": "2099-01-30",
-                        "update_subdir": "",
-                        "runweek": [field.updateDate],
-                        "addition": {
-                            "emby": {
-                                "media_id": ""
-                            },
-                            "aria2": {
-                                "auto_download": true,
-                                "pause": false
-                            },
-                        }
+            // 获取正则建议
+            const loading = layer.load(0, { shade: false });
+            const epList = $('.filename-text').map(function (index, item) {
+                return $(item).text()
+            }).filter(function (index,item){
+                return item.endsWith(".mkv") || item.endsWith(".mp4") || item.endsWith(".avi")
+            }).get().join('\n')
+            const req = {
+                "inputs": { "ep_list": epList },
+                "response_mode": "blocking",
+                "user": "wjc133"
+            }
+            console.log(req)
+            GM_xmlhttpRequest({
+                url: llmUrl + '/v1/workflows/run',
+                method: "POST",
+                headers: {
+                    'Authorization': 'Bearer ' + llmToken,
+                    'Content-Type': 'application/json'
+                },
+                data: JSON.stringify(req),
+                onload: function (xhr) {
+                    console.log(xhr)
+                    layer.close(loading)
+                    let suggestRegexMatch = ''
+                    if (xhr.status == 200) {
+                        const resp = JSON.parse(xhr.responseText);
+                        console.log(resp)
+                        suggestRegexMatch = resp.data.outputs.text
                     }
-                    // Ajax 提交表单数据
-                    $.ajax({
-                        url: baseUrl + '/add_task',
-                        type: 'POST',
-                        contentType: 'application/json',
-                        data: JSON.stringify(req),
-                        success: function (res) {
-                            console.log(res)
-                            if (res == '0') {
-                                layer.msg('保存成功', { icon: 1 });
-                                return
-                            }
-                            layer.msg('保存失败', { icon: 0 });
-                        },
-                        error: function (err) {
-                            layer.msg('保存失败', { icon: 0 });
-                        }
-                    });
-                    return false; // 阻止默认 form 跳转
-                });
+                    openDialog(suggestRegexMatch)
+                }
             });
         })
+    }
+
+    function openDialog(suggestRegexMatch) {
+        // 在此处输入 layer 的任意代码
+        layer.open({
+            type: 1, // page 层类型
+            area: ['800px', '400px'],
+            title: '追更资源',
+            shade: 0.6, // 遮罩透明度
+            shadeClose: true, // 点击遮罩区域，关闭弹层
+            maxmin: true, // 允许全屏最小化
+            anim: 0, // 0-6 的动画形式，-1 不开启
+            content: model
+        })
+        var thisPageUrl = window.location.href
+        layui.use(['form'], function () {
+            var form = layui.form;
+            form.render(); // 渲染全部表单
+            var layer = layui.layer;
+            form.val('auto_save_form', {
+                "resourceName": getResourceName(thisPageUrl),
+                "shareLink": thisPageUrl,
+                "regexMatch": suggestRegexMatch,
+            });
+            // 提交事件
+            form.on('submit(demo1)', function (data) {
+                var field = data.field; // 获取表单字段值
+                const req = {
+                    "taskname": field.resourceName,
+                    "shareurl": field.shareLink,
+                    "savepath": `/国产电视剧/${field.resourceName}`,
+                    "pattern": field.regexMatch,
+                    "replace": field.regexRename,
+                    "enddate": "2099-01-30",
+                    "update_subdir": "",
+                    "runweek": [field.updateDate],
+                    "addition": {
+                        "emby": {
+                            "media_id": ""
+                        },
+                        "aria2": {
+                            "auto_download": true,
+                            "pause": false
+                        },
+                    }
+                }
+                // Ajax 提交表单数据
+                 GM_xmlhttpRequest({
+                url:  baseUrl + '/add_task',
+                method: "POST",
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                data: JSON.stringify(req),
+                onload: function (xhr) {
+                     const res = JSON.parse(xhr.responseText);
+                     console.log(res)
+                        if (res == '0') {
+                            layer.msg('保存成功', { icon: 1 });
+                            return
+                        }
+                        layer.msg('保存失败', { icon: 0 });
+                }
+            });
+                return false; // 阻止默认 form 跳转
+            });
+        });
     }
 
     function getResourceName(url) {
@@ -159,7 +210,7 @@
 
     const css = GM_getResourceText('layui_css')
     GM_addStyle(css)
-    GM_addStyle('.layui-form-label{width: 100px !important;} .layui-input-block{margin-left: 120px;}')
+    GM_addStyle('.layui-form-label{width: 100px !important;} .layui-input-block{margin-left: 120px;} .layui-input-inline{margin-left: 20px;}')
 
     let script = document.createElement("script");
     script.type = "text/javascript";

@@ -54,7 +54,7 @@
                     <option value="7">星期日</option>
                 </select>
             </div>
-        </div> 
+        </div>
         <div class="layui-form-item">
             <label class="layui-form-label">文件重命名</label>
             <div class="layui-input-inline">
@@ -63,7 +63,7 @@
             <div class="layui-input-inline">
                 <input type="text" name="regexRename" placeholder="重命名规则" class="layui-input">
             </div>
-        </div> 
+        </div>
         <div class="layui-form-item">
             <div class="layui-input-block">
             <button type="submit" class="layui-btn" lay-submit lay-filter="demo1">立即提交</button>

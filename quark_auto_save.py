@@ -17,13 +17,13 @@ import requests
 import importlib
 from datetime import datetime
 
-# # 兼容青龙
-# try:
-#     from treelib import Tree
-# except:
-#     print("正在尝试自动安装依赖...")
-#     os.system("pip3 install treelib &> /dev/null")
-#     from treelib import Tree
+# 兼容青龙
+try:
+    from treelib import Tree
+except:
+    print("正在尝试自动安装依赖...")
+    os.system("pip3 install treelib &> /dev/null")
+    from treelib import Tree
 
 
 CONFIG_DATA = {}

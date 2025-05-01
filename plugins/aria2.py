@@ -76,12 +76,19 @@ class Aria2:
         }
         if self.secret:
             jsonrpc_data["params"].insert(0, f"token:{self.secret}")
-        try:
-            response = requests.post(self.rpc_url, json=jsonrpc_data)
-            response.raise_for_status()
-            return response.json()
-        except Exception as e:
-            print(f"Aria2下载: 错误{e}")
+        
+        max_retries = 3
+        for attempt in range(max_retries):
+            try:
+                response = requests.post(self.rpc_url, json=jsonrpc_data)
+                response.raise_for_status()
+                return response.json()
+            except Exception as e:
+                if attempt < max_retries - 1:
+                    time.sleep(1)
+                    print(f"Aria2下载: 错误{e}，正在重试({attempt + 1}/{max_retries})...")
+                else:
+                    print(f"Aria2下载: 错误{e}，已达到最大重试次数({max_retries})")
         return {}
 
     def get_version(self):

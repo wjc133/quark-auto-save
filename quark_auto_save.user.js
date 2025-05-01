@@ -18,9 +18,9 @@
 (function () {
     'use strict';
 
-    const baseUrl = ""
-    const llmUrl = ""
-    const llmToken = ""
+    const baseUrl = "http://100.124.217.105:5005"
+    const llmUrl = "http://100.124.217.105"
+    const llmToken = "app-qYR4B5zvrN1YQ3BlpW0TKEm6"
 
     // 用于判断 DOM 是否 Ready 的选择器
     const initSelector = '#ice-container .share-info-wrap'
@@ -176,23 +176,23 @@
                     }
                 }
                 // Ajax 提交表单数据
-                $.ajax({
-                    url: baseUrl + '/add_task',
-                    type: 'POST',
-                    contentType: 'application/json',
-                    data: JSON.stringify(req),
-                    success: function (res) {
-                        console.log(res)
+                 GM_xmlhttpRequest({
+                url:  baseUrl + '/add_task',
+                method: "POST",
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                data: JSON.stringify(req),
+                onload: function (xhr) {
+                     const res = JSON.parse(xhr.responseText);
+                     console.log(res)
                         if (res == '0') {
                             layer.msg('保存成功', { icon: 1 });
                             return
                         }
                         layer.msg('保存失败', { icon: 0 });
-                    },
-                    error: function (err) {
-                        layer.msg('保存失败', { icon: 0 });
-                    }
-                });
+                }
+            });
                 return false; // 阻止默认 form 跳转
             });
         });

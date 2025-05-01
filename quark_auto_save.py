@@ -17,13 +17,13 @@ import requests
 import importlib
 from datetime import datetime
 
-# 兼容青龙
-try:
-    from treelib import Tree
-except:
-    print("正在尝试自动安装依赖...")
-    os.system("pip3 install treelib &> /dev/null")
-    from treelib import Tree
+# # 兼容青龙
+# try:
+#     from treelib import Tree
+# except:
+#     print("正在尝试自动安装依赖...")
+#     os.system("pip3 install treelib &> /dev/null")
+#     from treelib import Tree
 
 
 CONFIG_DATA = {}
@@ -860,7 +860,7 @@ def do_sign(account):
     print()
 
 
-def do_save(account, tasklist=[]):
+def do_save(account, tasklist=[], manual_run=False):
     print(f"🧩 载入插件")
     plugins, CONFIG_DATA["plugins"], task_plugins_config = Config.load_plugins(
         CONFIG_DATA.get("plugins", {})
@@ -869,7 +869,7 @@ def do_save(account, tasklist=[]):
     # 获取全部保存目录fid
     account.update_savepath_fid(tasklist)
 
-    def check_date(task):
+    def check_date(task, manual_run):
         return (
             not task.get("enddate")
             or (
@@ -879,13 +879,13 @@ def do_save(account, tasklist=[]):
         ) and (
             not task.get("runweek")
             # 星期一为0，星期日为6
-            or (datetime.today().weekday() + 1 in task.get("runweek"))
+            or (not manual_run and datetime.today().weekday() + 1 in task.get("runweek"))
         )
 
     # 执行任务
     for index, task in enumerate(tasklist):
         # 判断任务期限
-        if check_date(task):
+        if check_date(task, manual_run):
             print()
             print(f"#{index+1}------------------")
             print(f"任务名称: {task['taskname']}")
@@ -940,6 +940,7 @@ def main():
     # 读取启动参数
     config_path = sys.argv[1] if len(sys.argv) > 1 else "quark_config.json"
     task_index = int(sys.argv[2]) if len(sys.argv) > 2 and sys.argv[2].isdigit() else ""
+    manual_run = True if len(sys.argv) > 3 and sys.argv[3] == "--manual_run" else False
     # 检查本地文件是否存在，如果不存在就下载
     if not os.path.exists(config_path):
         if os.environ.get("QUARK_COOKIE"):
@@ -984,9 +985,9 @@ def main():
         # 任务列表
         tasklist = CONFIG_DATA.get("tasklist", [])
         if type(task_index) is int:
-            do_save(accounts[0], [tasklist[task_index]])
+            do_save(accounts[0], [tasklist[task_index]], manual_run)
         else:
-            do_save(accounts[0], tasklist)
+            do_save(accounts[0], tasklist, manual_run)
         print()
     # 通知
     if NOTIFYS:

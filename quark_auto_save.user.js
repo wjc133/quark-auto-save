@@ -6,7 +6,6 @@
 // @description  在夸克网盘页面添加一个按钮，点击后打印当前页面URL到控制台
 // @author       wjc133
 // @require      https://code.jquery.com/jquery-3.7.1.min.js
-// @resource   layui_css https://unpkg.com/layui@2.6.8/dist/css/layui.css
 // @match        https://pan.quark.cn/*
 // @grant        GM_addStyle
 // @grant        GM_getResourceText
@@ -43,16 +42,13 @@
         <div class="layui-form-item">
             <label class="layui-form-label">周几更新</label>
             <div class="layui-input-block">
-                <select name="updateDate" lay-verify="required">
-                    <option value="">请选择更新日期</option>
-                    <option value="1">星期一</option>
-                    <option value="2">星期二</option>
-                    <option value="3">星期三</option>
-                    <option value="4">星期四</option>
-                    <option value="5">星期五</option>
-                    <option value="6">星期六</option>
-                    <option value="7">星期日</option>
-                </select>
+                <input type="checkbox" name="updateDate" value="1" title="周一">
+                <input type="checkbox" name="updateDate" value="2" title="周二">
+                <input type="checkbox" name="updateDate" value="3" title="周三">
+                <input type="checkbox" name="updateDate" value="4" title="周四">
+                <input type="checkbox" name="updateDate" value="5" title="周五">
+                <input type="checkbox" name="updateDate" value="6" title="周六">
+                <input type="checkbox" name="updateDate" value="7" title="周日">
             </div>
         </div>
         <div class="layui-form-item">
@@ -95,39 +91,76 @@
             'gap': '10px',
         })
         $('#addToAutoSave').on('click', function () {
-            // 获取正则建议
-            const loading = layer.load(0, { shade: false });
-            const epList = $('.filename-text').map(function (index, item) {
-                return $(item).text()
-            }).filter(function (index,item){
-                return item.endsWith(".mkv") || item.endsWith(".mp4") || item.endsWith(".avi")
-            }).get().join('\n')
-            const req = {
-                "inputs": { "ep_list": epList },
-                "response_mode": "blocking",
-                "user": "wjc133"
-            }
-            console.log(req)
-            GM_xmlhttpRequest({
-                url: llmUrl + '/v1/workflows/run',
-                method: "POST",
-                headers: {
-                    'Authorization': 'Bearer ' + llmToken,
-                    'Content-Type': 'application/json'
-                },
-                data: JSON.stringify(req),
-                onload: function (xhr) {
-                    console.log(xhr)
-                    layer.close(loading)
-                    let suggestRegexMatch = ''
-                    if (xhr.status == 200) {
-                        const resp = JSON.parse(xhr.responseText);
-                        console.log(resp)
-                        suggestRegexMatch = resp.data.outputs.text
-                    }
-                    openDialog(suggestRegexMatch)
+            // 先弹出文件选择界面
+            const fileList = $('.filename-text').map(function (index, item) {
+                return {
+                    name: $(item).text(),
+                    checked: false
                 }
-            });
+            }).filter(function (index,item){
+                return item.name.endsWith(".mkv") || item.name.endsWith(".mp4") || item.name.endsWith(".avi")
+            }).get();
+            
+            // 创建文件选择弹窗
+            const fileSelectHtml = '<div style="padding: 20px; height: auto;">' +
+                fileList.map(file => 
+                    `<div style="margin-bottom: 10px;">
+                        <input type="checkbox" id="file-${fileList.indexOf(file)}" ${file.checked ? 'checked' : ''}>
+                        <label for="file-${fileList.indexOf(file)}">${file.name}</label>
+                    </div>`
+                ).join('') +
+                '</div>';
+            
+            layer.open({
+                type: 1,
+                title: '请选择要处理的剧集文件示例（选3到5个能代表命名格式的就行）',
+                area: ['600px', '500px'],
+                content: fileSelectHtml,
+                btn: ['确定', '取消'],
+                yes: function(index) {
+                    // 获取选中的文件
+                    const selectedFiles = fileList.filter((file, i) => 
+                        $(`#file-${i}`).is(':checked')
+                    ).map(file => file.name);
+                    
+                    if (selectedFiles.length === 0) {
+                        layer.msg('请至少选择一个文件', {icon: 0});
+                        return;
+                    }
+                    
+                    layer.close(index);
+                    
+                    // 获取正则建议
+                    const loading = layer.load(0, { shade: false });
+                    const epList = selectedFiles.join('\n')
+                    const req = {
+                        "inputs": { "ep_list": epList },
+                        "response_mode": "blocking",
+                        "user": "wjc133"
+                    }
+                    console.log(req)
+                    GM_xmlhttpRequest({
+                        url: llmUrl + '/v1/workflows/run',
+                        method: "POST",
+                        headers: {
+                            'Authorization': 'Bearer ' + llmToken,
+                            'Content-Type': 'application/json'
+                        },
+                        data: JSON.stringify(req),
+                        onload: function (xhr) {
+                            console.log(xhr)
+                            layer.close(loading)
+                            let suggestRegexMatch = ''
+                            if (xhr.status == 200) {
+                                const resp = JSON.parse(xhr.responseText);
+                                console.log(resp)
+                                suggestRegexMatch = resp.data.outputs.text
+                            }
+                            openDialog(suggestRegexMatch)
+                        }
+                    });
+                }
+            })
         })
     }
 
@@ -164,7 +197,7 @@
                     "replace": field.regexRename,
                     "enddate": "2099-01-30",
                     "update_subdir": "",
-                    "runweek": [field.updateDate],
+                    "runweek": field.updateDate,
                     "addition": {
                         "emby": {
                             "media_id": ""
@@ -208,13 +241,16 @@
         return decodeURI(a)
     }
 
-    const css = GM_getResourceText('layui_css')
-    GM_addStyle(css)
     GM_addStyle('.layui-form-label{width: 100px !important;} .layui-input-block{margin-left: 120px;} .layui-input-inline{margin-left: 20px;}')
 
     let script = document.createElement("script");
     script.type = "text/javascript";
     script.src = "https://unpkg.com/layui@2.6.8/dist/layui.js";
     document.body.appendChild(script);
+
+    let layuiCSS=document.createElement("link");
+    layuiCSS.rel="stylesheet";
+    layuiCSS.href="https://unpkg.com/layui@2.6.8/dist/css/layui.css";
+    document.head.appendChild(layuiCSS);
     ifExist(initSelector, init);
 })();

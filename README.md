@@ -71,17 +71,16 @@
 Docker 部署提供 WebUI 管理配置，图形化配置已能满足绝大多数需求。部署命令：
 
 ```shell
-docker run -d \
+sudo docker run -d \
   --name quark-auto-save \
   -p 5005:5005 \
   -e WEBUI_USERNAME=admin \
   -e WEBUI_PASSWORD=admin123 \
-  -v ./quark-auto-save/config:/app/config \
-  -v ./quark-auto-save/media:/media \ # 可选，模块alist_strm_gen生成strm使用
+  -v /home/wjc133/docker/quark-auto-save/config:/app/config \
+  -v /home/wjc133/quark-auto-save/media:/media \
   --network bridge \
   --restart unless-stopped \
-  cp0204/quark-auto-save:latest
-  # registry.cn-shenzhen.aliyuncs.com/cp0204/quark-auto-save:latest # 国内镜像地址
+  cmsdwjc133/quark-auto-save:latest
 ```
 
 docker-compose.yml
@@ -90,7 +89,7 @@ docker-compose.yml
 name: quark-auto-save
 services:
   quark-auto-save:
-    image: cp0204/quark-auto-save:latest
+    image: cmsdwjc133/quark-auto-save
     container_name: quark-auto-save
     network_mode: bridge
     ports:
@@ -100,8 +99,8 @@ services:
       WEBUI_USERNAME: "admin"
       WEBUI_PASSWORD: "admin123"
     volumes:
-      - ./quark-auto-save/config:/app/config
-      - ./quark-auto-save/media:/media
+      - /home/wjc133/docker/quark-auto-save/config:/app/config
+      - /home/wjc133/quark-auto-save/media:/media
 ```
 
 管理地址：http://yourhost:5005
@@ -163,48 +162,6 @@ docker run --rm -v /var/run/docker.sock:/var/run/docker.sock containrrr/watchtow
 ### 更多使用技巧
 
 请参考 Wiki ：[使用技巧集锦](https://github.com/Cp0204/quark-auto-save/wiki/使用技巧集锦)
-
-## 用户指南
-
-### 1. 登录系统
-1. 打开浏览器访问 `http://yourhost:5005`
-2. 使用默认账号密码登录（admin/admin123）
-3. 建议首次登录后修改密码
-
-### 2. 基础配置
-1. 点击左侧菜单【系统配置】
-2. 在【夸克Cookie】处填写你的夸克网盘Cookie
-3. 如需推送通知，配置相应推送渠道
-4. 如有Emby等媒体库，填写相关配置
-5. 点击【保存配置】按钮
-
-### 3. 添加转存任务
-1. 点击左侧菜单【任务列表】
-2. 点击【添加任务】按钮
-3. 填写任务信息：
-   - 任务名称：便于识别的名称
-   - 分享链接：夸克网盘分享链接
-   - 保存路径：转存到夸克网盘的路径
-   - 文件名匹配规则：使用正则表达式匹配要转存的文件
-   - 文件名替换规则：可选，用于整理文件名
-   - 结束日期：任务自动停止的日期
-4. 点击【保存】按钮
-
-### 4. 油猴脚本使用
-1. 安装油猴脚本管理器扩展
-2. 安装夸克网盘一键转存脚本
-3. 在夸克网盘分享页面点击【一键转存】按钮
-4. 选择任务名称后点击确认
-
-### 5. 常见问题
-Q: 为什么任务没有执行？
-A: 请检查Cookie是否有效、分享链接是否失效、任务是否已过期
-
-Q: 如何获取夸克Cookie？
-A: 登录夸克网盘网页版后，按F12打开开发者工具，在Application→Cookies中找到pan.quark.cn的Cookie
-
-Q: 转存失败怎么办？
-A: 检查网络连接、账号空间是否充足、分享链接是否需要提取码
 
 ## 声明
 

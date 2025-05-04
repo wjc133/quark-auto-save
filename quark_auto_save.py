@@ -18,12 +18,12 @@ import importlib
 from datetime import datetime
 
 # 兼容青龙
-try:
-    from treelib import Tree
-except:
-    print("正在尝试自动安装依赖...")
-    os.system("pip3 install treelib &> /dev/null")
-    from treelib import Tree
+# try:
+#     from treelib import Tree
+# except:
+#     print("正在尝试自动安装依赖...")
+#     os.system("pip3 install treelib &> /dev/null")
+#     from treelib import Tree
 
 
 CONFIG_DATA = {}
@@ -126,27 +126,41 @@ class Config:
         return plugins_available, plugins_config, task_plugins_config
 
     def breaking_change_update(config_data):
+        # 检查配置数据中是否存在 "emby" 字段，如果存在则进行配置版本从 0.3.6.1 到 0.3.7 的更新操作
         if config_data.get("emby"):
             print("🔼 Update config v0.3.6.1 to 0.3.7")
+            # 如果 "media_servers" 字段不存在，则创建一个空字典，然后将 "emby" 相关配置迁移到该字段下
             config_data.setdefault("media_servers", {})["emby"] = {
+                # 从原 "emby" 配置中获取 "url" 字段的值
                 "url": config_data["emby"]["url"],
+                # 从原 "emby" 配置中获取 "apikey" 字段的值，并将其作为 "token" 存储
                 "token": config_data["emby"]["apikey"],
             }
+            # 删除原 "emby" 字段，完成配置迁移
             del config_data["emby"]
+            # 遍历配置数据中的任务列表
             for task in config_data.get("tasklist", {}):
+                # 将任务中的 "emby_id" 字段值赋给 "media_id" 字段，如果 "emby_id" 不存在则赋空字符串
                 task["media_id"] = task.get("emby_id", "")
+                # 如果任务中存在 "emby_id" 字段，则删除该字段
                 if task.get("emby_id"):
                     del task["emby_id"]
+        # 检查配置数据中是否存在 "media_servers" 字段，如果存在则进行配置版本从 0.3.8 到 0.3.9 的更新操作
         if config_data.get("media_servers"):
             print("🔼 Update config v0.3.8 to 0.3.9")
+            # 将 "media_servers" 字段的值赋给 "plugins" 字段
             config_data["plugins"] = config_data.get("media_servers")
+            # 删除原 "media_servers" 字段，完成配置迁移
             del config_data["media_servers"]
+            # 遍历配置数据中的任务列表
             for task in config_data.get("tasklist", {}):
+                # 为每个任务添加 "addition" 字段，并在其中存储 "emby" 相关的 "media_id" 信息
                 task["addition"] = {
                     "emby": {
                         "media_id": task.get("media_id", ""),
                     }
                 }
+                # 如果任务中存在 "media_id" 字段，则删除该字段
                 if task.get("media_id"):
                     del task["media_id"]
 
@@ -524,36 +538,54 @@ class Quark:
         else:
             return None
 
+    def update_save_path_fid(self, dir_path):
+        """处理单个目录路径的创建和fid更新"""
+        # 检查目录是否已存在
+        dir_paths_exist_arr = self.get_fids([dir_path])
+        if dir_paths_exist_arr:
+            self.savepath_fid[dir_path] = dir_paths_exist_arr[0]["fid"]
+            return True
+            
+        # 创建新目录
+        mkdir_return = self.mkdir(dir_path)
+        if mkdir_return["code"] == 0:
+            new_dir = mkdir_return["data"]
+            self.savepath_fid[dir_path] = new_dir["fid"]
+            print(f"创建文件夹：{dir_path}")
+            return True
+        else:
+            print(f"创建文件夹：{dir_path} 失败, {mkdir_return['message']}")
+            return False
+            
     def update_savepath_fid(self, tasklist):
+        # 从任务列表中筛选出未过期的任务，将其保存路径格式化并去重，生成目录路径列表
         dir_paths = [
+            # 替换连续的斜杠为单个斜杠，并在路径前添加根目录斜杠
             re.sub(r"/{2,}", "/", f"/{item['savepath']}")
             for item in tasklist
+            # 筛选条件：任务没有结束日期，或者当前日期在任务结束日期之前
             if not item.get("enddate")
             or (
                 datetime.now().date()
                 <= datetime.strptime(item["enddate"], "%Y-%m-%d").date()
             )
         ]
+        # 如果目录路径列表为空，说明没有需要处理的目录，直接返回 False
         if not dir_paths:
             return False
+        # 调用 get_fids 方法获取已存在的目录路径及其对应的 fid
         dir_paths_exist_arr = self.get_fids(dir_paths)
         dir_paths_exist = [item["file_path"] for item in dir_paths_exist_arr]
-        # 比较创建不存在的
         dir_paths_unexist = list(set(dir_paths) - set(dir_paths_exist) - set(["/"]))
+        
         for dir_path in dir_paths_unexist:
-            mkdir_return = self.mkdir(dir_path)
-            if mkdir_return["code"] == 0:
-                new_dir = mkdir_return["data"]
-                dir_paths_exist_arr.append(
-                    {"file_path": dir_path, "fid": new_dir["fid"]}
-                )
-                print(f"创建文件夹：{dir_path}")
-            else:
-                print(f"创建文件夹：{dir_path} 失败, {mkdir_return['message']}")
-        # 储存目标目录的fid
+            self.update_save_path_fid(dir_path)
+            
+        # 更新已存在目录的fid
         for dir_path in dir_paths_exist_arr:
             self.savepath_fid[dir_path["file_path"]] = dir_path["fid"]
-        # print(dir_paths_exist_arr)
+        
+        return True
 
     def do_save_check(self, shareurl, savepath):
         try:
@@ -929,7 +961,7 @@ def do_save(account, tasklist=[], manual_run=False):
                             plugin.run(task, account=account, tree=is_new_tree) or task
                         )
     print()
-
+    
 
 def main():
     global CONFIG_DATA

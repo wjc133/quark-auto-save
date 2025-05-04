@@ -300,6 +300,90 @@ def delete_file():
     return jsonify(response)
 
 
+@app.route("/direct_download", methods=["POST"])
+def direct_download():
+    # 提取参数
+    req=request.json
+    shareurl = req.get("shareurl")
+    fid_list = req.get("fid_list")
+    # 检查配置文件是否存在
+    if not os.path.exists(CONFIG_PATH):
+        return jsonify({"error": "配置文件不存在"})
+    with open(CONFIG_PATH, "r", encoding="utf-8") as file:
+        CONFIG_DATA = json.load(file)
+    cookie_val = CONFIG_DATA.get("cookie")
+    cookies = Config.get_cookies(cookie_val)
+    if not cookies:
+        return jsonify({"error": "cookie配置错误"})
+    # 检查 Aria2 插件配置是否存在
+    if not CONFIG_DATA.get("plugins", {}).get("aria2"):
+        return jsonify({"error": "Aria2插件未配置"})
+    accounts = [Quark(cookie, index) for index, cookie in enumerate(cookies)]
+    account = accounts[0]
+    account.init()
+    if not account.is_active:
+        return jsonify({"error": "账号失效"})
+    pcs=CONFIG_DATA.get("plugins", {})
+    # 只启用 aria2 插件
+    if pcs and 'aria2' in pcs:
+        pcs = {'aria2': pcs['aria2']}
+    else:
+        pcs = {}
+
+    plugins, CONFIG_DATA["plugins"], task_plugins_config = Config.load_plugins(pcs)
+    # 从plugins中获取aria2实例
+    aria2 = plugins.get("aria2")
+    if not aria2:
+        return jsonify({"error": "Aria2插件未启用"})
+    print(f"转存账号: {account.nickname}")
+    account.update_save_path_fid(dir_path="/自动转存")
+    to_pdir_fid = account.savepath_fid["/自动转存"]
+
+    # 链接转换所需参数
+    pwd_id, passcode, pdir_fid = account.get_id_from_url(shareurl)
+    # print("match: ", pwd_id, pdir_fid)
+
+    # 获取stoken，同时可验证资源是否失效
+    is_sharing, stoken = account.get_stoken(pwd_id, passcode)
+    share_file_list = account.get_detail(pwd_id, stoken, pdir_fid)["list"]
+    # 需保存的文件清单
+    need_save_list = []
+    for share_file in share_file_list:
+        if share_file["fid"] in fid_list:
+            need_save_list.append(share_file)
+    fid_list = [item["fid"] for item in need_save_list]
+    fid_token_list = [item["share_fid_token"] for item in need_save_list]
+    if not fid_list:
+        return jsonify({"error": "no fid_list need to be saved"})
+    save_file_return = account.save_file(
+        fid_list, fid_token_list, to_pdir_fid, pwd_id, stoken
+    )
+    
+
+    # 获取网盘下载链接
+    file_fids = save_file_return["data"]["task_resp"]["data"]["save_as"]["save_as_top_fids"]
+    download_return, cookie = account.download(file_fids)
+    file_urls = [item["download_url"] for item in download_return["data"]]
+    
+    results = []
+    for index, file_url in enumerate(file_urls):
+        params = [
+            [file_url],
+            {
+                "header": [
+                    f"Cookie: {cookie or data['cookie'][0]}",
+                    f"User-Agent: {account.USER_AGENT}",
+                ],
+                "dir": CONFIG_DATA.get("plugins", {}).get("aria2").get("dir", "/downloads"),
+                "out": need_save_list[index]["file_name"]
+            }
+        ]
+        result = aria2.add_uri(params)
+        results.append(result)
+    
+    return jsonify({"results": results})
+
+
 # 定时任务执行的函数
 def run_python(args):
     logging.info(f">>> 定时运行任务")

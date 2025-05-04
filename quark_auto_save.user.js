@@ -6,7 +6,6 @@
 // @description  在夸克网盘页面添加一个按钮，点击后打印当前页面URL到控制台
 // @author       wjc133
 // @require      https://code.jquery.com/jquery-3.7.1.min.js
-// @resource   layui_css https://unpkg.com/layui@2.6.8/dist/css/layui.css
 // @match        https://pan.quark.cn/*
 // @grant        GM_addStyle
 // @grant        GM_getResourceText
@@ -18,13 +17,14 @@
 (function () {
     'use strict';
 
-    const baseUrl = "http://100.124.217.105:5005"
+    const baseUrl = "http://127.0.0.1:5005"
     const llmUrl = "http://100.124.217.105"
     const llmToken = "app-qYR4B5zvrN1YQ3BlpW0TKEm6"
 
     // 用于判断 DOM 是否 Ready 的选择器
     const initSelector = '#ice-container .share-info-wrap'
     const getUrlBtn = '<div style="background-color: #0d53ff;border-radius: 6px;" class="open-client-button" id="addToAutoSave"><div class="open-share"><span style="width: 16px; height: 16px; display: inline-block; margin-right: 4px; background-image: url(\'data:image/svg+xml;base64,PD94bWwgdmVyc2lvbj0iMS4wIiBzdGFuZGFsb25lPSJubyI/PjwhRE9DVFlQRSBzdmcgUFVCTElDICItLy9XM0MvL0RURCBTVkcgMS4xLy9FTiIgImh0dHA6Ly93d3cudzMub3JnL0dyYXBoaWNzL1NWRy8xLjEvRFREL3N2ZzExLmR0ZCI+PHN2ZyB0PSIxNzQzMDkwMzQxOTY2IiBjbGFzcz0iaWNvbiIgdmlld0JveD0iMCAwIDEwMjQgMTAyNCIgdmVyc2lvbj0iMS4xIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHAtaWQ9IjM0OTAiIHdpZHRoPSIxNiIgaGVpZ2h0PSIxNiIgeG1sbnM6eGxpbms9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkveGxpbmsiPjxwYXRoIGQ9Ik05NiA1MTJjMC0yMjkuNzYgMTg2LjI0LTQxNiA0MTYtNDE2YTMyIDMyIDAgMCAxIDAgNjRBMzUyIDM1MiAwIDEgMCA4NjQgNTEyYTMyIDMyIDAgMCAxIDY0IDBjMCAyMjkuNzYtMTg2LjI0IDQxNi00MTYgNDE2Uzk2IDc0MS43NiA5NiA1MTJ6IiBmaWxsPSIjZmZmZmZmIiBwLWlkPSIzNDkxIj48L3BhdGg+PHBhdGggZD0iTTI4OCA1MTJjMC0xMjMuNzMzMzMzIDEwMC4yNjY2NjctMjI0IDIyNC0yMjRhMzIgMzIgMCAwIDEgMCA2NEExNjAgMTYwIDAgMSAwIDY3MiA1MTJhMzIgMzIgMCAwIDEgNjQgMCAyMjQgMjI0IDAgMSAxLTQ0OCAweiIgZmlsbD0iI2ZmZmZmZiIgcC1pZD0iMzQ5MiI+PC9wYXRoPjxwYXRoIGQ9Ik02NjkuMDEzMzMzIDM1NC44NTg2NjdhMzIgMzIgMCAwIDEgMCA0NS4yMjY2NjZsLTEzNC40IDEzNC41MjhhMzIgMzIgMCAwIDEtNDUuMjI2NjY2LTQ1LjIyNjY2NmwxMzQuNC0xMzQuNTI4YTMyIDMyIDAgMCAxIDQ1LjIyNjY2NiAweiIgZmlsbD0iI2ZmZmZmZiIgcC1pZD0iMzQ5MyI+PC9wYXRoPjxwYXRoIGQ9Ik03NzMuODg4IDk4LjQzMmEzMiAzMiAwIDAgMSAxOS43OTczMzMgMjkuNTY4djEwMi40SDg5NmEzMiAzMiAwIDAgMSAyMi42OTg2NjcgNTQuNjEzMzMzbC0xMTQuNjg4IDExNS4yYTMyIDMyIDAgMCAxLTIyLjY5ODY2NyA5LjM4NjY2N0g2NDYuNGEzMiAzMiAwIDAgMS0zMi0zMlYyNDMuNzU0NjY3YTMyIDMyIDAgMCAxIDkuMzAxMzMzLTIyLjU3MDY2N2wxMTUuMjg1MzM0LTExNS43NTQ2NjdhMzIgMzIgMCAwIDEgMzQuOTAxMzMzLTYuOTk3MzMzek02NzguNCAyNTYuOTgxMzMzVjM0NS42SDc2OGw1MC45ODY2NjctNTEuMmgtNTcuMzAxMzM0YTMyIDMyIDAgMCAxLTMyLTMyVjIwNS40ODI2NjdMNjc4LjQgMjU2Ljk4MTMzM3oiIGZpbGw9IiNmZmZmZmYiIHAtaWQ9IjM0OTQiPjwvcGF0aD48L3N2Zz4=\');"></span><span style="color: white;">添加追踪</span></div></div>'
+    const downloadBtn = '<div style="background-color: #00a854;border-radius: 6px;" class="open-client-button" id="directDownload"><div class="open-share"><span style="width: 16px; height: 16px; display: inline-block; margin-right: 4px; background-image: url(\'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCA1MTIgNTEyIj48cGF0aCBmaWxsPSIjZmZmIiBkPSJNMjU2IDhDMTE5IDggOCAxMTkgOCAyNTZzMTExIDI0OCAyNDggMjQ4IDI0OC0xMTEgMjQ4LTI0OFMzOTMgOCAyNTYgOHptMjE2IDI3MkgxMzZ2LTQwaDI0OHY0MHoiLz48L3N2Zz4=\');"></span><span style="color: white;">立即下载</span></div></div>'
 
     const model = `
     <form class="layui-form" action="" lay-filter="auto_save_form" style="padding: 20px;">
@@ -43,16 +43,13 @@
         <div class="layui-form-item">
             <label class="layui-form-label">周几更新</label>
             <div class="layui-input-block">
-                <select name="updateDate" lay-verify="required">
-                    <option value="">请选择更新日期</option>
-                    <option value="1">星期一</option>
-                    <option value="2">星期二</option>
-                    <option value="3">星期三</option>
-                    <option value="4">星期四</option>
-                    <option value="5">星期五</option>
-                    <option value="6">星期六</option>
-                    <option value="7">星期日</option>
-                </select>
+                <input type="checkbox" name="updateDate" value="1" title="周一">
+                <input type="checkbox" name="updateDate" value="2" title="周二">
+                <input type="checkbox" name="updateDate" value="3" title="周三">
+                <input type="checkbox" name="updateDate" value="4" title="周四">
+                <input type="checkbox" name="updateDate" value="5" title="周五">
+                <input type="checkbox" name="updateDate" value="6" title="周六">
+                <input type="checkbox" name="updateDate" value="7" title="周日">
             </div>
         </div>
         <div class="layui-form-item">
@@ -90,44 +87,148 @@
         $('.share-info-wrap').append('<div id="cst-btn-wrap"></div>');
         $('.open-client-button').appendTo('#cst-btn-wrap');
         $('#cst-btn-wrap').append(getUrlBtn);
+        $('#cst-btn-wrap').append(downloadBtn);
         $('#cst-btn-wrap').css({
             'display': 'flex',
             'gap': '10px',
         })
-        $('#addToAutoSave').on('click', function () {
-            // 获取正则建议
-            const loading = layer.load(0, { shade: false });
-            const epList = $('.filename-text').map(function (index, item) {
-                return $(item).text()
-            }).filter(function (index,item){
-                return item.endsWith(".mkv") || item.endsWith(".mp4") || item.endsWith(".avi")
-            }).get().join('\n')
-            const req = {
-                "inputs": { "ep_list": epList },
-                "response_mode": "blocking",
-                "user": "wjc133"
-            }
-            console.log(req)
-            GM_xmlhttpRequest({
-                url: llmUrl + '/v1/workflows/run',
-                method: "POST",
-                headers: {
-                    'Authorization': 'Bearer ' + llmToken,
-                    'Content-Type': 'application/json'
-                },
-                data: JSON.stringify(req),
-                onload: function (xhr) {
-                    console.log(xhr)
-                    layer.close(loading)
-                    let suggestRegexMatch = ''
-                    if (xhr.status == 200) {
-                        const resp = JSON.parse(xhr.responseText);
-                        console.log(resp)
-                        suggestRegexMatch = resp.data.outputs.text
+
+        $('#directDownload').on('click', function () {
+            // 先弹出文件选择界面
+            const fileList = $('.ant-table-row').map(function (index, item) {
+                return {
+                    fid: $(item).attr('data-row-key'),
+                    name: $(item).find('.filename-text').text(),
+                    checked: false
+                }
+            }).get();
+
+            // 创建文件选择弹窗
+            const fileSelectHtml = '<div style="padding: 20px; height: auto;">' +
+                fileList.map(file =>
+                    `<div style="margin-bottom: 10px;">
+                <input type="checkbox" id="file-${fileList.indexOf(file)}" ${file.checked ? 'checked' : ''}>
+                <label for="file-${fileList.indexOf(file)}">${file.name}</label>
+            </div>`
+                ).join('') +
+                '</div>';
+
+            layer.open({
+                type: 1,
+                title: '请选择要下载的文件',
+                area: ['600px', '500px'],
+                content: fileSelectHtml,
+                btn: ['确定', '取消'],
+                yes: function (index) {
+                    // 获取选中的文件
+                    const selectedFiles = fileList.filter((file, i) =>
+                        $(`#file-${i}`).is(':checked')
+                    );
+
+                    if (selectedFiles.length === 0) {
+                        layer.msg('请至少选择一个文件', { icon: 0 });
+                        return;
                     }
-                    openDialog(suggestRegexMatch)
+
+                    layer.close(index);
+
+                    // 调用下载接口
+                    const loading = layer.load(0, { shade: false });
+                    const req = {
+                        "fid_list": selectedFiles.map(file => file.fid),
+                        "shareurl": window.location.href
+                    };
+
+                    GM_xmlhttpRequest({
+                        url: baseUrl + '/direct_download',
+                        method: "POST",
+                        headers: {
+                            'Content-Type': 'application/json'
+                        },
+                        data: JSON.stringify(req),
+                        onload: function (xhr) {
+                            layer.close(loading);
+                            if (xhr.status == 200) {
+                                layer.msg('下载任务已提交', { icon: 1 });
+                            } else {
+                                layer.msg('下载失败: ' + xhr.responseText, { icon: 2 });
+                            }
+                        }
+                    });
                 }
             });
+        });
+        $('#addToAutoSave').on('click', function () {
+            // 先弹出文件选择界面
+            const fileList = $('.filename-text').map(function (index, item) {
+                return {
+                    name: $(item).text(),
+                    checked: false
+                }
+            }).filter(function (index, item) {
+                return item.name.endsWith(".mkv") || item.name.endsWith(".mp4") || item.name.endsWith(".avi")
+            }).get();
+
+            // 创建文件选择弹窗
+            const fileSelectHtml = '<div style="padding: 20px; height: auto;">' +
+                fileList.map(file =>
+                    `<div style="margin-bottom: 10px;">
+                        <input type="checkbox" id="file-${fileList.indexOf(file)}" ${file.checked ? 'checked' : ''}>
+                        <label for="file-${fileList.indexOf(file)}">${file.name}</label>
+                    </div>`
+                ).join('') +
+                '</div>';
+
+            layer.open({
+                type: 1,
+                title: '请选择要处理的剧集文件示例（选3到5个能代表命名格式的就行）',
+                area: ['600px', '500px'],
+                content: fileSelectHtml,
+                btn: ['确定', '取消'],
+                yes: function (index) {
+                    // 获取选中的文件
+                    const selectedFiles = fileList.filter((file, i) =>
+                        $(`#file-${i}`).is(':checked')
+                    ).map(file => file.name);
+
+                    if (selectedFiles.length === 0) {
+                        layer.msg('请至少选择一个文件', { icon: 0 });
+                        return;
+                    }
+
+                    layer.close(index);
+
+                    // 获取正则建议
+                    const loading = layer.load(0, { shade: false });
+                    const epList = selectedFiles.join('\n')
+                    const req = {
+                        "inputs": { "ep_list": epList },
+                        "response_mode": "blocking",
+                        "user": "wjc133"
+                    }
+                    console.log(req)
+                    GM_xmlhttpRequest({
+                        url: llmUrl + '/v1/workflows/run',
+                        method: "POST",
+                        headers: {
+                            'Authorization': 'Bearer ' + llmToken,
+                            'Content-Type': 'application/json'
+                        },
+                        data: JSON.stringify(req),
+                        onload: function (xhr) {
+                            console.log(xhr)
+                            layer.close(loading)
+                            let suggestRegexMatch = ''
+                            if (xhr.status == 200) {
+                                const resp = JSON.parse(xhr.responseText);
+                                console.log(resp)
+                                suggestRegexMatch = resp.data.outputs.text
+                            }
+                            openDialog(suggestRegexMatch)
+                        }
+                    });
+                }
+            })
         })
     }
 
@@ -164,7 +265,7 @@
                     "replace": field.regexRename,
                     "enddate": "2099-01-30",
                     "update_subdir": "",
-                    "runweek": [field.updateDate],
+                    "runweek": field.updateDate,
                     "addition": {
                         "emby": {
                             "media_id": ""
@@ -176,23 +277,23 @@
                     }
                 }
                 // Ajax 提交表单数据
-                 GM_xmlhttpRequest({
-                url:  baseUrl + '/add_task',
-                method: "POST",
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                data: JSON.stringify(req),
-                onload: function (xhr) {
-                     const res = JSON.parse(xhr.responseText);
-                     console.log(res)
+                GM_xmlhttpRequest({
+                    url: baseUrl + '/add_task',
+                    method: "POST",
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    data: JSON.stringify(req),
+                    onload: function (xhr) {
+                        const res = JSON.parse(xhr.responseText);
+                        console.log(res)
                         if (res == '0') {
                             layer.msg('保存成功', { icon: 1 });
                             return
                         }
                         layer.msg('保存失败', { icon: 0 });
-                }
-            });
+                    }
+                });
                 return false; // 阻止默认 form 跳转
             });
         });
@@ -208,13 +309,16 @@
         return decodeURI(a)
     }
 
-    const css = GM_getResourceText('layui_css')
-    GM_addStyle(css)
     GM_addStyle('.layui-form-label{width: 100px !important;} .layui-input-block{margin-left: 120px;} .layui-input-inline{margin-left: 20px;}')
 
     let script = document.createElement("script");
     script.type = "text/javascript";
     script.src = "https://unpkg.com/layui@2.6.8/dist/layui.js";
     document.body.appendChild(script);
+
+    let layuiCSS = document.createElement("link");
+    layuiCSS.rel = "stylesheet";
+    layuiCSS.href = "https://unpkg.com/layui@2.6.8/dist/css/layui.css";
+    document.head.appendChild(layuiCSS);
     ifExist(initSelector, init);
 })();
